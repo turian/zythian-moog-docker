@@ -8,29 +8,28 @@ LABEL maintainer="lastname@gmail.com" \
 # Set the working directory
 WORKDIR /root/
 
+# Step 1: Update and install essential tools
 RUN emerge-webrsync \
     && emerge dev-vcs/git dev-lang/python:3.8 dev-util/cmake sys-devel/gcc sys-devel/make sys-libs/ncurses dev-libs/libxml2 x11-libs/libX11 media-libs/libsndfile x11-libs/libXrender x11-libs/libXcomposite x11-libs/libXcursor media-libs/libvorbis media-libs/libogg media-libs/flac media-libs/alsa-lib
 
-# Install LLVM and Clang (replace with specific version if needed)
-RUN emerge sys-devel/llvm sys-devel/clang
+# Step 2: Install LLVM and Clang
+RUN emerge sys-devel/llvm
+RUN emerge sys-devel/clang
 
-# Set Python and LLVM config
+# Step 3: Set Python and LLVM config
 ENV PYTHONLIBPATH=/usr/lib/python3.8 \
     PYTHONINCLUDEPATH=/usr/include/python3.8 \
     CC=clang \
     CXX=clang++
 
-# Download and build Faust (similar to previous approach)
+# Step 4: Download and build Faust
 RUN git clone --branch v2.69.3 https://github.com/grame-cncm/faust.git \
     && cd faust \
     && mkdir build && cd build \
     && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
     && make && make install
 
-# Modify DawDreamer Makefile
-RUN sed -i '/-DBUILD_DAWDREAMER_FAUST/d' /root/DawDreamer/Builds/LinuxMakefile/Makefile
-
-# Clone and build DawDreamer (similar to previous approach)
+# Step 5: Clone and build DawDreamer
 RUN git clone https://github.com/DBraun/DawDreamer.git \
     && cd DawDreamer \
     && git submodule update --init --recursive \
