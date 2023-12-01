@@ -60,24 +60,23 @@ RUN echo "\nCloning repositories and installing Python packages..." >> /root/bui
 RUN echo "\nChecking DawDreamer/Builds/LinuxMakefile directory..." >> /root/build_logs.txt \
     && ls -la DawDreamer/Builds/LinuxMakefile >> /root/build_logs.txt 2>&1
 
+## Copy the build logs to the output directory
+#RUN cp /root/build_logs.txt /output/
 
-# Copy the log file to the accessible location after the build step
-RUN cp /root/build_logs.txt /
+## Run make with VERBOSE and CONFIG in the DawDreamer build directory and log the output
+#RUN echo "\nBuilding DawDreamer..." >> /root/build_logs.txt \
+#    && cd DawDreamer/Builds/LinuxMakefile \
+#    && make VERBOSE=1 CONFIG=Release LIBS="-lstdc++fs" CXXFLAGS="-I../../alsa-lib/include -I/usr/include/python3.8 -I$PYTHONINCLUDEPATH"  LDFLAGS="-L/__w/DawDreamer/DawDreamer/alsa-lib/src -L$PYTHONLIBPATH -L/root/faust-2.69.3/lib -L/root/faust-2.69.3/build/lib/" >> /root/build_logs.txt 2>&1
 
-# Run make with VERBOSE and CONFIG in the DawDreamer build directory and log the output
-RUN echo "\nBuilding DawDreamer..." >> /root/build_logs.txt \
-    && cd DawDreamer/Builds/LinuxMakefile \
-    && make VERBOSE=1 CONFIG=Release LIBS="-lstdc++fs" CXXFLAGS="-I../../alsa-lib/include -I/usr/include/python3.8 -I$PYTHONINCLUDEPATH"  LDFLAGS="-L/__w/DawDreamer/DawDreamer/alsa-lib/src -L$PYTHONLIBPATH -L/root/faust-2.69.3/lib -L/root/faust-2.69.3/build/lib/" >> /root/build_logs.txt 2>&1
+## Move the built library
+#RUN cd DawDreamer/Builds/LinuxMakefile && mv build/libdawdreamer.so ../../dawdreamer/dawdreamer.so
 
-# Move the built library
-RUN cd DawDreamer/Builds/LinuxMakefile && mv build/libdawdreamer.so ../../dawdreamer/dawdreamer.so
+## Build and install the Python package and log the output
+#RUN cd DawDreamer && python3 setup.py build >> /root/build_logs.txt 2>&1
+#RUN cd DawDreamer && python3 setup.py install >> /root/build_logs.txt 2>&1
 
-# Build and install the Python package and log the output
-RUN cd DawDreamer && python3 setup.py build >> /root/build_logs.txt 2>&1
-RUN cd DawDreamer && python3 setup.py install >> /root/build_logs.txt 2>&1
+## Test import of DawDreamer and log the output
+#RUN { python3 -c "import dawdreamer"; } >> /root/build_logs.txt 2>&1 || echo "Import failed" >> /root/build_logs.txt
 
-# Test import of DawDreamer and log the output
-RUN { python3 -c "import dawdreamer"; } >> /root/build_logs.txt 2>&1 || echo "Import failed" >> /root/build_logs.txt
-
-# Final command
-CMD ["cat", "/root/build_logs.txt"]
+## Final command
+#CMD ["cat", "/root/build_logs.txt"]
