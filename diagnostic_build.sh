@@ -1,50 +1,62 @@
-#!/bin/bash
+# Using Gentoo as the base image
+FROM gentoo/stage3
 
-# Diagnostic Build Script for Debugging Linking Errors with Parallel Building
+LABEL maintainer="lastname@gmail.com" \
+      version="0.1" \
+      description=""
 
-# Define log file paths
-FAUST_BUILD_LOG="/root/faust_build_log.txt"
-DAWDREAMER_BUILD_LOG="/root/dawdreamer_build_log.txt"
-DAWDREAMER_TEST_LOG="/root/dawdreamer_test_log.txt"
+# Set the working directory
+WORKDIR /root/
 
-# Step 1: Build Faust with Detailed Logging and Parallel Building
-echo "Building Faust with parallel jobs..." | tee -a $FAUST_BUILD_LOG
-mkdir -p /root/faust-2.69.3/build/lib
-cd /root/faust-2.69.3/build/
-cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON 2>&1 | tee -a $FAUST_BUILD_LOG
-make -j8 VERBOSE=1 2>&1 | tee -a $FAUST_BUILD_LOG
-make -f Make.llvm.static VERBOSE=1 2>&1 | tee -a $FAUST_BUILD_LOG
-make install 2>&1 | tee -a $FAUST_BUILD_LOG
+# Update system
+RUN emerge-webrsync
 
-# Step 2: Verify DawDreamer Directory
-echo "Verifying DawDreamer directory..." | tee -a $DAWDREAMER_BUILD_LOG
-ls -la /root/DawDreamer/Builds/LinuxMakefile | tee -a $DAWDREAMER_BUILD_LOG
+# Install essential tools
+RUN emerge dev-vcs/git 
+RUN emerge dev-lang/python:3.8 
+RUN emerge dev-util/cmake 
+RUN emerge sys-devel/gcc 
+RUN emerge sys-devel/make 
+RUN emerge sys-libs/ncurses 
+RUN emerge dev-libs/libxml2 
+RUN emerge x11-libs/libX11 
+RUN emerge media-libs/libsndfile 
+RUN emerge x11-libs/libXrender 
+RUN emerge x11-libs/libXcomposite 
+RUN emerge x11-libs/libXcursor 
+RUN emerge media-libs/libvorbis 
+RUN emerge media-libs/libogg 
+RUN emerge media-libs/flac 
+RUN emerge media-libs/alsa-lib
 
-# Remove the -DBUILD_DAWDREAMER_FAUST flag
-sed -i '/-DBUILD_DAWDREAMER_FAUST/d' Makefile
+# Install LLVM and Clang (replace with specific version if needed)
+RUN emerge sys-devel/llvm 
+RUN emerge sys-devel/clang
 
-# Build libsamplerate
-echo "Build libsamplerate" | tee -a $DAWDREAMER_BUILD_LOG
-cd /root/DawDreamer/thirdparty/libsamplerate
-cmake -DCMAKE_BUILD_TYPE=Release -Bbuild_release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cd build_release
-make CONFIG=Release 2>&1 | tee -a $DAWDREAMER_BUILD_LOG
+# Set Python and LLVM config
+ENV PYTHONLIBPATH=/usr/lib/python3.8 \
+    PYTHONINCLUDEPATH=/usr/include/python3.8 \
+    CC=clang \
+    CXX=clang++
 
-# Step 3: Build DawDreamer with Verbose Output and Parallel Building
-echo "Building DawDreamer with parallel jobs..." | tee -a $DAWDREAMER_BUILD_LOG
-cd /root/DawDreamer/Builds/LinuxMakefile
-make -j8 VERBOSE=1 CONFIG=Release LIBS="-lstdc++fs" \
-     CXXFLAGS="-I../../alsa-lib/include -I/usr/include/python3.10 -I$PYTHONINCLUDEPATH" \
-     LDFLAGS="-L/__w/DawDreamer/DawDreamer/alsa-lib/src -L$PYTHONLIBPATH -L/root/faust-2.69.3/lib -L/root/faust-2.69.3/build/lib/" 2>&1 | tee -a $DAWDREAMER_BUILD_LOG
-cp /root/DawDreamer/Builds/LinuxMakefile/build/libdawdreamer.so /root/DawDreamer/dawdreamer/dawdreamer.so
+# Download and build Faust
+RUN git clone --branch v2.69.3 https://github.com/grame-cncm/faust.git \
+    && cd faust \
+    && mkdir build && cd build \
+    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
+    && make && make install
 
-# Step 4: Install and Test DawDreamer
-echo "Installing and testing DawDreamer..." | tee -a $DAWDREAMER_TEST_LOG
-cd /root/DawDreamer
-python3 setup.py build 2>&1 | tee -a $DAWDREAMER_TEST_LOG
-python3 setup.py install 2>&1 | tee -a $DAWDREAMER_TEST_LOG
-python3 -c "import dawdreamer" 2>&1 | tee -a $DAWDREAMER_TEST_LOG || echo "Import failed" | tee -a $DAWDREAMER_TEST_LOG
+# Modify DawDreamer Makefile
+RUN sed -i '/-DBUILD_DAWDREAMER_FAUST/d' /root/DawDreamer/Builds/LinuxMakefile/Makefile
 
-# Output Logs (Commented out as they are no longer necessary)
-# echo "Copying build logs to output directory..."
-# cp /root/*.txt /output/
+# Clone and build DawDreamer
+RUN git clone https://github.com/DBraun/DawDreamer.git \
+    && cd DawDreamer \
+    && git submodule update --init --recursive \
+    && mkdir Builds/LinuxMakefile/build \
+    && cd Builds/LinuxMakefile/build \
+    && cmake ../../.. \
+    && make
+
+CMD ["bash"]
+
