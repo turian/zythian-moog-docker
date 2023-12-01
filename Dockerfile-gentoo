@@ -1,0 +1,48 @@
+# Using Gentoo as the base image
+FROM gentoo/stage3
+
+LABEL maintainer="lastname@gmail.com" \
+      version="0.1" \
+      description=""
+
+# Set the working directory
+WORKDIR /root/
+
+# Update and install essential tools
+RUN emerge-webrsync \
+    && emerge dev-vcs/git dev-lang/python:3.8 dev-util/cmake sys-devel/gcc virtual/make sys-libs/ncurses dev-libs/libxml2 dev-libs/libx11 media-libs/libsndfile x11-libs/libXrender x11-libs/libXcomposite x11-libs/libXcursor media-libs/libvorbis media-libs/libogg media-libs/flac media-libs/alsa-lib
+
+# Install LLVM and Clang (replace with specific version if needed)
+RUN emerge sys-devel/llvm sys-devel/clang
+
+# Set Python and LLVM config
+ENV PYTHONLIBPATH=/usr/lib/python3.8 \
+    PYTHONINCLUDEPATH=/usr/include/python3.8 \
+    CC=clang \
+    CXX=clang++
+
+# Download and build Faust (similar to previous approach)
+RUN git clone --branch v2.69.3 https://github.com/grame-cncm/faust.git \
+    && cd faust \
+    && mkdir build && cd build \
+    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
+    && make && make install
+
+
+# Modify DawDreamer Makefile
+RUN sed -i '/-DBUILD_DAWDREAMER_FAUST/d' /root/DawDreamer/Builds/LinuxMakefile/Makefile
+
+# Clone and build DawDreamer (similar to previous approach)
+RUN git clone https://github.com/DBraun/DawDreamer.git \
+    && cd DawDreamer \
+    && git submodule update --init --recursive \
+    && mkdir Builds/LinuxMakefile/build \
+    && cd Builds/LinuxMakefile/build \
+    && cmake ../../.. \
+    && make
+
+# Final command
+CMD ["bash"]	
+# Final command
+CMD ["bash"]
+

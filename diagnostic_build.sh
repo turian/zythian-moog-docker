@@ -20,6 +20,9 @@ make install 2>&1 | tee -a $FAUST_BUILD_LOG
 echo "Verifying DawDreamer directory..." | tee -a $DAWDREAMER_BUILD_LOG
 ls -la /root/DawDreamer/Builds/LinuxMakefile | tee -a $DAWDREAMER_BUILD_LOG
 
+# Remove the -DBUILD_DAWDREAMER_FAUST flag
+sed -i '/-DBUILD_DAWDREAMER_FAUST/d' Makefile
+
 # Build libsamplerate
 echo "Build libsamplerate" | tee -a $DAWDREAMER_BUILD_LOG
 cd /root/DawDreamer/thirdparty/libsamplerate
