@@ -31,8 +31,8 @@ RUN apt-get install -y lv2-c++-tools libgtkmm-2.4-1v5 pkg-config lv2-dev libgtkm
 
 
 # Download and extract Faust
-RUN wget https://github.com/grame-cncm/faust/releases/download/2.69.3/faust-2.69.3.tar.gz \
-    && tar zxvf faust-2.69.3.tar.gz
+#RUN wget https://github.com/grame-cncm/faust/releases/download/2.69.3/faust-2.69.3.tar.gz \
+#    && tar zxvf faust-2.69.3.tar.gz
 
 # Add LLVM repository and install LLVM-17
 # ALL=1 needed for libpolly
@@ -46,13 +46,13 @@ RUN wget https://apt.llvm.org/llvm.sh \
 #RUN apt-get install -y llvm-17 llvm-17-dev llvm-17-tools libllvm17
 
 # Set up symlink for llvm-config if necessary
-RUN ln -sf /usr/bin/llvm-config-17 /usr/bin/llvm-config
+#RUN ln -sf /usr/bin/llvm-config-17 /usr/bin/llvm-config
 
-# Log LLVM version and installations
-RUN echo "LLVM Versions Installed:" > /root/build_logs.txt \
-    && apt list --installed | grep llvm >> /root/build_logs.txt \
-    && echo "\nllvm-config version:" >> /root/build_logs.txt \
-    && llvm-config --version >> /root/build_logs.txt
+## Log LLVM version and installations
+#RUN echo "LLVM Versions Installed:" > /root/build_logs.txt \
+#    && apt list --installed | grep llvm >> /root/build_logs.txt \
+#    && echo "\nllvm-config version:" >> /root/build_logs.txt \
+#    && llvm-config --version >> /root/build_logs.txt
 
 # Clone repositories and install Python packages
 RUN echo "\nCloning repositories and installing Python packages..." >> /root/build_logs.txt \
@@ -63,15 +63,19 @@ RUN echo "\nCloning repositories and installing Python packages..." >> /root/bui
     && git submodule init \
     && git submodule update
 
-# Build Faust and log the process
-RUN echo "\nBuilding Faust..." >> /root/build_logs.txt \
-    && mkdir faust-2.69.3/build/lib \
-    && cd faust-2.69.3/build/ \
-    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
-    && make \
-    && make -f Make.llvm.static \
-    && make install \
-    >> /root/build_logs.txt 2>&1
+## Build Faust and log the process
+#RUN echo "\nBuilding Faust..." >> /root/build_logs.txt \
+#    && mkdir faust-2.69.3/build/lib \
+#    && cd faust-2.69.3/build/ \
+#    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
+#    && make \
+#    && make -f Make.llvm.static \
+#    && make install \
+#    >> /root/build_logs.txt 2>&1
+
+RUN perl -i -pe 's/ -lfaustwithllvm//' DawDreamer/Builds/LinuxMakefile
+RUN perl -i -pe 's/ "-DBUILD_DAWDREAMER_FAUST"//' DawDreamer/Builds/LinuxMakefile
+
 
 # Ensure the DawDreamer/Builds/LinuxMakefile directory exists and list its contents for verification
 RUN echo "\nChecking DawDreamer/Builds/LinuxMakefile directory..." >> /root/build_logs.txt \

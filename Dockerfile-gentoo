@@ -12,9 +12,38 @@ WORKDIR /root/
 RUN emerge-webrsync \
     && emerge dev-vcs/git dev-lang/python:3.8 dev-util/cmake sys-devel/gcc sys-devel/make sys-libs/ncurses dev-libs/libxml2 x11-libs/libX11 media-libs/libsndfile x11-libs/libXrender x11-libs/libXcomposite x11-libs/libXcursor media-libs/libvorbis media-libs/libogg media-libs/flac media-libs/alsa-lib
 
+emerge --sync
+emerge sys-devel/gcc
+emerge sys-devel/llvm
+# emerge -pqv '=sys-libs/libomp-16.0.6::gentoo'
+CC=gcc CXX=c++ emerge  '=sys-libs/libomp-16.0.6::gentoo'
+CC=gcc CXX=c++ emerge  'sys-devel/clang'
+MAKEOPTS=-j4 CC=gcc CXX=c++ emerge  'sys-devel/clang'
+MAKEOPTS=-j4 CC=gcc CXX=c++ emerge  'sys-devel/clang'
+emerge sys-devel/clang
+
+
+emerge app-misc/screen
+
+
+We therefore recommend the following procedure for users:
+1. Sync your tree:
+# emerge --sync
+
+2. Perform a full world upgrade, e.g.:
+# emerge -a -uvDU @world --keep-going=y
+
+3. If any failures occur, please run perl-cleaner --all, then try again:
+# perl-cleaner --all
+
+4. Perform a world upgrade again.
+
+5. Once complete, depclean:
+# emerge -a --depclean
+
+
+
 # Step 2: Install LLVM and Clang
-RUN emerge sys-devel/llvm
-RUN emerge sys-devel/clang
 
 # Step 3: Set Python and LLVM config
 ENV PYTHONLIBPATH=/usr/lib/python3.8 \
@@ -23,20 +52,65 @@ ENV PYTHONLIBPATH=/usr/lib/python3.8 \
     CXX=clang++
 
 # Step 4: Download and build Faust
-RUN git clone --branch v2.69.3 https://github.com/grame-cncm/faust.git \
-    && cd faust \
-    && mkdir build && cd build \
-    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
-    && make && make install
+RUN wget https://github.com/grame-cncm/faust/archive/refs/tags/2.69.3.tar.gz \
+    && tar -xzvf 2.69.3.tar.gz \
+    && cd faust-2.69.3
 
-# Step 5: Clone and build DawDreamer
-RUN git clone https://github.com/DBraun/DawDreamer.git \
-    && cd DawDreamer \
-    && git submodule update --init --recursive \
-    && mkdir Builds/LinuxMakefile/build \
-    && cd Builds/LinuxMakefile/build \
-    && cmake ../../.. \
-    && make
+Cd build
 
-# Final command
-CMD ["bash"]
+# export PATH=$PATH:/usr/lib/llvm/16/bin
+#RUN mkdir build && cd build \
+#    && cmake .. -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
+#    && cmake . -DINCLUDE_LLVM=ON -DINCLUDE_STATIC=ON \
+#    && make && make install
+
+emerge media-libs/freetype
+emerge media-libs/mesa
+emerge dev-lang/python:3.8
+
+export CXXFLAGS="-I/usr/include/python3.8"
+export LDFLAGS="-L/usr/lib/python3.8/config"
+cd ~/DawDreamer/Builds/LinuxMakefile/
+make
+
+
+
+## Step 5: Clone and build DawDreamer
+#RUN git clone https://github.com/DBraun/DawDreamer.git \
+#    && cd DawDreamer \
+#    && git submodule update --init --recursive \
+#    && mkdir Builds/LinuxMakefile/build \
+#    && cd Builds/LinuxMakefile/build \
+#    && cmake ../../.. \
+#    && make
+#
+## Final command
+#CMD ["bash"]
+
+emerge x11-libs/libXrandr
+emerge media-libs/mesa
+emerge media-libs/freetype
+emerge x11-libs/libXinerama
+CXXFLAGS+=" -I/usr/include/freetype2"
+export CXXFLAGS
+emerge app-editors/vim
+echo 'media-libs/libglvnd X' > /etc/portage/package.use/custom_use
+
+Edit abletonclip.h <stdint.h>
+emerge --ask app-portage/gentoolkit
+
+
+Cd ~/DawDreamer/thirdparty/libsamplerate
+cmake . && make && make install
+echo 'sys-devel/llvm static-libs' >> /etc/portage/package.use/custom_use
+
+No worries. Can you try removing "-DBUILD_DAWDREAMER_FAUST" in https://github.com/DBraun/DawDreamer/blob/main/Builds/LinuxMakefile/Makefile
+
+python3.8 -m ensurepip
+
+python3.8 setup.py build
+
+
+
+Cd ~
+Git clone https://github.com/juce-framework/JUCE.git
